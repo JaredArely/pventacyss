@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cotizador CYSS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        .bg-cyss { background-color: #002060; color: white; }
+        .text-cyss { color: #002060; font-weight: bold; }
+        .btn-cyss { background-color: #002060; color: white; border: none; }
+        .btn-cyss:hover { background-color: #001540; color: white; }
+        /* Estilo para botón deshabilitado */
+        .btn-cyss:disabled { background-color: #555; cursor: not-allowed; opacity: 0.7; }
+        
+        .table-cotizacion th { background-color: #002060; color: white; }
+        .total-box { font-size: 1.5rem; font-weight: bold; color: #28a745; text-align: right; }
+        
+        .prod-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-right: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 bg-white vh-100 shadow p-4 sticky-top" style="overflow-y: auto;">
+            <h4 class="text-cyss mb-4"><i class="fas fa-file-invoice-dollar"></i> Cotizador V12</h4>
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Cliente:</label>
+                <input type="text" id="cliente" class="form-control" placeholder="Nombre del cliente">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Atendido por:</label>
+                <input type="text" id="vendedor" class="form-control bg-light text-uppercase fw-bold" 
+                       value="{{ vendedor_nombre }}" readonly>
+                <small class="text-cyss">Sucursal: {{ sucursal_nombre }}</small>
+                <input type="hidden" id="sucursal_id" value="{{ sucursal_id }}">
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label class="form-label fw-bold">Dólar (TC):</label>
+                    <input type="number" id="tc" class="form-control text-center" value="19.00" onchange="recalcularTodoGlobal()">
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold">Margen:</label>
+                    <select id="margen" class="form-select" onchange="recalcularTodoGlobal()">
+                        <option value="0.75">Público (0.75)</option>
+                        <option value="0.80">Preferente (0.80)</option>
+                        <option value="0.90">Integrador (0.90)</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr>
+            
+            <div class="d-grid gap-2">
+                <button class="btn btn-danger" onclick="borrarTodo()"><i class="fas fa-trash"></i> Borrar Todo</button>
+                <button class="btn btn-dark" onclick="window.location.href='/'">← Volver al Menú</button>
+            </div>
+
+            <div class="mt-4 p-3 bg-light rounded border">
+                <h5 class="mb-0">Total Cotización:</h5>
+                <div id="totalCotizacion" class="text-end">
+                    <div class="h2 fw-bold mb-0 text-success">$ 0.00</div>
+                    <small class="text-muted">Incluye IVA (Redondeado)</small>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+                <button id="btnPdf" class="btn btn-primary btn-lg" onclick="generarPDF()">
+                    <i class="fas fa-file-pdf"></i> Generar PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="col-md-9 p-4">
+            <div class="input-group input-group-lg mb-4 shadow-sm">
+                <input type="text" id="inputBusqueda" class="form-control" 
+                       placeholder="🔍 Escribe modelo o nombre..." 
+                       autocomplete="off"
+                       onkeypress="if(event.key === 'Enter') buscarManual()">
+                <button class="btn btn-cyss" type="button" id="btnBuscar" onclick="buscarManual()">BUSCAR</button>
+            </div>
+
+            <div id="listaResultados" class="list-group mb-4 shadow-sm" style="display:none; max-height: 400px; overflow-y: auto;"></div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-cyss text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Productos en la Cotización</h5>
+                    <small>Precios Editables en Azul</small>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="10%" class="text-center">Cant.</th> 
+                                    <th width="15%">Modelo</th>
+                                    <th width="40%">Descripción</th>
+                                    <th width="15%" class="text-end">P. Unitario</th>
+                                    <th width="15%" class="text-end">Importe</th>
+                                    <th width="5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaProductos">
+                                <tr><td colspan="6" class="text-center p-5 text-muted">No hay productos agregados</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let carrito = [];
+    let dolar = {{ 19.50 }};
+    let timeoutBusqueda;
+    let buscandoActivo = false; // <--- CANDADO DE SEGURIDAD
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if(document.getElementById('inputBusqueda')) document.getElementById('inputBusqueda').focus();
+    });
+
+    const inputBusqueda = document.getElementById('inputBusqueda');
+    const listaResultados = document.getElementById('listaResultados');
+    const btnBuscar = document.getElementById('btnBuscar');
+
+    // Búsqueda automática al escribir (con freno de 800ms)
+    inputBusqueda.addEventListener('input', function() {
+        const q = this.value.trim();
+        clearTimeout(timeoutBusqueda);
+        
+        if (q.length < 3) {
+            listaResultados.innerHTML = '';
+            listaResultados.style.display = 'none';
+            return;
+        }
+
+        timeoutBusqueda = setTimeout(() => {
+            ejecutarBusqueda(q);
+        }, 800);
+    });
+
+    // Búsqueda Manual (Enter o Botón)
+    function buscarManual() {
+        if (buscandoActivo) return; // SI YA ESTÁ BUSCANDO, IGNORA EL CLIC
+        
+        const q = inputBusqueda.value.trim();
+        clearTimeout(timeoutBusqueda);
+        if(q.length >= 3) ejecutarBusqueda(q);
+    }
+
+    function ejecutarBusqueda(q) {
+        // --- ACTIVAMOS EL CANDADO ---
+        buscandoActivo = true;
+        btnBuscar.disabled = true; // Deshabilita el botón visualmente
+        inputBusqueda.disabled = true; // Deshabilita el input para no cambiar texto
+        const textoOriginalBtn = btnBuscar.innerHTML;
+        btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Icono girando
+        
+        listaResultados.style.display = 'block';
+        listaResultados.innerHTML = '<div class="list-group-item text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Buscando en Syscom...</div>';
+
+        fetch(`/buscar_productos?q=${q}`)
+            .then(res => res.json())
+            .then(data => {
+                listaResultados.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                        
+                        let badgeStock = '';
+                        if(p.origen === 'LOCAL'){
+                            badgeStock = `<span class="badge ${p.stock_critico ? 'bg-danger' : 'bg-success'} me-2">Stock: ${p.stock_label}</span>`;
+                        } else {
+                            badgeStock = `<span class="badge bg-warning text-dark me-2"><i class="fas fa-globe"></i> Syscom Web</span>`;
+                        }
+
+                        const imagenUrl = p.img_portada || '/static/logocyss.png';
+
+                        div.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                <img src="${imagenUrl}" alt="Img" class="prod-thumb">
+                                <div>
+                                    <strong>${p.modelo}</strong> - ${p.nombre}
+                                    <br>
+                                    <small class="text-muted">Precio Lista: $${p.precio_usd.toFixed(2)} ${p.moneda}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                ${badgeStock}
+                                <button class="btn btn-sm btn-primary mt-1" onclick='agregarAlCarrito(${JSON.stringify(p)})'>
+                                    <i class="fas fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                        `;
+                        listaResultados.appendChild(div);
+                    });
+                } else {
+                    listaResultados.innerHTML = '<div class="list-group-item text-center text-muted">No se encontraron productos.</div>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                listaResultados.innerHTML = '<div class="list-group-item text-center text-danger">Error de conexión.</div>';
+            })
+            .finally(() => {
+                // --- QUITAMOS EL CANDADO AL TERMINAR ---
+                buscandoActivo = false;
+                btnBuscar.disabled = false;
+                inputBusqueda.disabled = false;
+                btnBuscar.innerHTML = 'BUSCAR';
+                inputBusqueda.focus(); // Devolvemos el foco para seguir escribiendo
+            });
+    }
+
+    // Cerrar lista al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!inputBusqueda.contains(e.target) && !listaResultados.contains(e.target)) {
+            listaResultados.style.display = 'none';
+        }
+    });
+
+    function agregarAlCarrito(producto) {
+        dolar = parseFloat(document.getElementById('tc').value) || 19.50;
+        const margen = parseFloat(document.getElementById('margen').value) || 0.75; 
+        let costoMXN = producto.precio_usd;
+        if (producto.moneda === 'USD') {
+            costoMXN = producto.precio_usd * dolar;
+        }
+        let precioVenta = costoMXN / margen;
+        carrito.push({
+            modelo: producto.modelo,
+            nombre: producto.nombre,
+            cantidad: 1,
+            precio_base: precioVenta,   
+            precio_manual: precioVenta  
+        });
+        renderizarTabla();
+        listaResultados.style.display = 'none';
+        inputBusqueda.value = '';
+        inputBusqueda.focus();
+    }
+
+    function renderizarTabla() {
+        const tbody = document.getElementById('tablaProductos');
+        tbody.innerHTML = '';
+        if(carrito.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-5 text-muted">No hay productos agregados</td></tr>';
+            actualizarTotales();
+            return;
+        }
+        carrito.forEach((item, index) => {
+            const importe = item.cantidad * item.precio_manual;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="width: 80px;">
+                    <input type="number" class="form-control form-control-sm text-center" 
+                           value="${item.cantidad}" min="1" 
+                           onchange="actualizarCantidad(${index}, this.value)">
+                </td>
+                <td class="fw-bold">${item.modelo}</td>
+                <td><small>${item.nombre}</small></td>
+                <td style="width: 140px;">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control text-end fw-bold text-primary" 
+                               value="${item.precio_manual.toFixed(2)}" 
+                               onchange="actualizarPrecioManual(${index}, this.value)">
+                    </div>
+                </td>
+                <td class="text-end fw-bold">$ ${importe.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="eliminarItem(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        actualizarTotales();
+    }
+
+    function actualizarCantidad(index, cantidad) {
+        let c = parseInt(cantidad);
+        if(isNaN(c) || c < 1) c = 1;
+        carrito[index].cantidad = c;
+        renderizarTabla();
+    }
+
+    function actualizarPrecioManual(index, nuevoPrecio) {
+        let p = parseFloat(nuevoPrecio);
+        if(isNaN(p) || p < 0) p = 0;
+        carrito[index].precio_manual = p; 
+        renderizarTabla();
+    }
+
+    function eliminarItem(index) {
+        carrito.splice(index, 1);
+        renderizarTabla();
+    }
+
+    function borrarTodo() {
+        if(confirm('¿Seguro que deseas borrar toda la cotización?')) {
+            carrito = [];
+            renderizarTabla();
+        }
+    }
+
+    function recalcularTodoGlobal() {
+        dolar = parseFloat(document.getElementById('tc').value) || 19.50;
+        actualizarTotales();
+    }
+
+    function actualizarTotales() {
+        let subtotalAcumulado = 0;
+        carrito.forEach(item => {
+            subtotalAcumulado += (item.cantidad * item.precio_manual);
+        });
+        let iva = subtotalAcumulado * 0.16;
+        let totalMatematico = subtotalAcumulado + iva;
+        let totalRedondeado = Math.ceil(totalMatematico / 5) * 5;
+        const divTotal = document.getElementById('totalCotizacion');
+        divTotal.innerHTML = `
+            <div class="h2 fw-bold mb-0 text-success">
+                $ ${totalRedondeado.toLocaleString('es-MX', {minimumFractionDigits: 2})}
+            </div>
+            <small class="text-muted">Incluye IVA (Redondeado)</small>
+        `;
+    }
+
+    function generarPDF() {
+        if (carrito.length === 0) {
+            alert("Agrega productos antes de generar el PDF.");
+            return;
+        }
+        const btn = document.getElementById('btnPdf');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        btn.disabled = true;
+        const totalTexto = document.querySelector('#totalCotizacion .h2').innerText.trim();
+        const payload = {
+            cliente: document.getElementById('cliente').value || "CLIENTE MOSTRADOR",
+            vendedor: document.getElementById('vendedor').value,
+            items: carrito.map(i => ({
+                cantidad: i.cantidad,
+                nombre: i.modelo + " - " + i.nombre,
+                p_unit: i.precio_manual, 
+                importe: i.cantidad * i.precio_manual
+            })),
+            total: totalTexto 
+        };
+        fetch('/api/exportar_pdf', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === 'success'){
+                window.open(data.archivo, '_blank');
+            } else {
+                alert('Error al generar PDF: ' + data.message);
+            }
+        })
+        .catch(err => {
+            alert('Error de conexión con el servidor.');
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+</script>
+</body>
+</html>

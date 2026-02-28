@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cotizador Profesional | CYSS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: white; }
+        .header-bar {
+            background: linear-gradient(90deg, #002060 0%, #004080 100%);
+            color: white; padding: 15px 20px; border-radius: 0 0 15px 15px; margin-bottom: 25px;
+        }
+        .table-cot th { background-color: #f8f9fa; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; vertical-align: middle; }
+        .input-plain { border: 1px solid #dee2e6; border-radius: 4px; width: 100%; padding: 5px; font-size: 0.9rem; }
+        .input-plain:focus { border-color: #002060; outline: none; background-color: #f0f8ff; }
+        .input-readonly { background-color: #e9ecef; border: 1px solid #ced4da; color: #495057; font-weight: bold; }
+        .btn-add { background-color: #002060; color: white; border-radius: 50px; padding: 8px 25px; }
+        .btn-add:hover { background-color: #001540; color: white; }
+        .btn-pdf { background-color: #d32f2f; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; }
+        .btn-pdf:hover { background-color: #b71c1c; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+            <a href="/" class="text-white text-decoration-none"><i class="fas fa-arrow-left"></i> Menú</a>
+            <h4 class="m-0"><i class="fas fa-file-invoice ms-2"></i> Cotizador Profesional</h4>
+        </div>
+        <div class="d-flex gap-3">
+             <div class="input-group input-group-sm">
+                <span class="input-group-text border-0 fw-bold">Margen:</span>
+                <select id="margenGlobal" class="form-select fw-bold text-primary" style="max-width: 150px;" onchange="recalcularTodo()">
+                    <option value="0.75" selected>Público (25%)</option>
+                    <option value="0.80">Preferente (20%)</option>
+                    <option value="0.90">Integrador (10%)</option>
+                </select>
+            </div>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text border-0 fw-bold">Dólar (TC):</span>
+                <input type="number" id="tipoCambio" class="form-control fw-bold" value="{{ dolar_default }}" step="0.1" onchange="recalcularTodo()">
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4 pb-5">
+        <div class="card-custom p-4 mb-3">
+            <div class="row mb-3 border-bottom pb-3">
+                <div class="col-md-12">
+                    <label class="small text-muted fw-bold"><i class="fas fa-user-tie me-1"></i> ¿QUIÉN ELABORA LA COTIZACIÓN?</label>
+                    <select id="vendedorSelect" class="form-select form-select-lg fw-bold text-dark bg-light border-primary">
+                        <option value="OFICINA CYSS">-- SELECCIONAR VENDEDOR --</option>
+                        <option value="LIC. EDUARDO CHOEL ROBLES">LIC. EDUARDO CHOEL ROBLES</option>
+                        <option value="ING. MARIO ROSAS SEDEÑO">ING. MARIO ROSAS SEDEÑO</option>
+                        <option value="LIC. KARINA BALDERAS">LIC. KARINA BALDERAS</option>
+                        <option value="ING. JARED ARELY HERNANDEZ PEREZ">ING. JARED ARELY HERNANDEZ PEREZ</option>
+                    </select>
+                </div>
+            </div>
+
+    <div class="container-fluid px-4 pb-5">
+        <div class="card-custom p-4 mb-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <label class="small text-muted fw-bold">CLIENTE</label>
+                    <input type="text" id="nombreCliente" class="form-control form-control-lg border-0 bg-light fw-bold" placeholder="Escribe el nombre del cliente...">
+                </div>
+                <div class="col-md-4 text-end">
+                    <small class="d-block text-muted">FOLIO</small>
+                    <span class="fs-5 fw-bold">{{ folio }}</span>
+                    <div class="small text-primary">{{ fecha }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-custom p-0 mb-3 overflow-hidden">
+            <table class="table table-cot align-middle m-0">
+                <thead>
+                    <tr>
+                        <th width="5%" class="text-center">Cant.</th>
+                        <th width="15%">Modelo</th>
+                        <th width="35%">Descripción</th>
+                        <th width="8%" class="text-center">Unidad</th>
+                        <th width="10%" class="text-end bg-warning bg-opacity-10">Costo USD<br><small>(Sin IVA)</small></th>
+                        <th width="12%" class="text-end bg-success bg-opacity-10">P. Venta MXN<br><small>(REDONDEADO)</small></th>
+                        <th width="12%" class="text-end">Importe Total<br><small>(MXN)</small></th>
+                        <th width="3%"></th>
+                    </tr>
+                </thead>
+                <tbody id="tablaProductos"></tbody>
+            </table>
+            <div class="p-3 text-center bg-light border-top">
+                <button onclick="agregarFila()" class="btn btn-add"><i class="fas fa-plus me-1"></i> Agregar Producto</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="alert alert-light border shadow-sm">
+                    <small class="fw-bold text-muted"><i class="fas fa-calculator"></i> Fórmula Aplicada:</small><br>
+                    <code class="text-dark">Precio Unitario = Redondear( ((CostoUSD * 1.16) * TC) / Margen ) a $5.00</code>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card-custom p-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <span id="lblSubtotal" class="fw-bold">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                        <span class="text-muted">IVA (16%):</span>
+                        <span id="lblIVA" class="fw-bold">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fs-4 fw-bold text-dark">TOTAL:</span>
+                        <span id="lblTotal" class="fs-2 fw-bold text-primary">$0.00</span>
+                    </div>
+
+                    <div class="mb-3 p-2 bg-light rounded border">
+                        <label class="small fw-bold mb-2 d-block text-muted">Estilo de Impresión PDF:</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tipoIva" id="ivaIncluido" value="incluido" checked>
+                            <label class="btn btn-outline-primary btn-sm" for="ivaIncluido"><i class="fas fa-tag me-1"></i> IVA Incluido</label>
+
+                            <input type="radio" class="btn-check" name="tipoIva" id="ivaDesglosado" value="desglosado">
+                            <label class="btn btn-outline-primary btn-sm" for="ivaDesglosado"><i class="fas fa-plus me-1"></i> Desglosado</label>
+                        </div>
+                    </div>
+
+                    <button onclick="generarPDF()" class="btn btn-pdf">
+                        <i class="fas fa-file-pdf me-2"></i> GENERAR COTIZACIÓN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() { agregarFila(); };
+
+        function agregarFila() {
+            const tbody = document.getElementById('tablaProductos');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="number" class="input-plain text-center qty" value="1" min="1" onchange="calcularFila(this)"></td>
+                <td>
+                    <input type="text" class="input-plain modelo fw-bold" placeholder="Modelo...">
+                    <button class="btn btn-sm btn-outline-secondary w-100 mt-1" style="font-size: 0.7rem;" onclick="buscarClick(this)"><i class="fas fa-search"></i> Buscar</button>
+                </td>
+                <td><textarea class="input-plain desc" rows="2" placeholder="Descripción..."></textarea></td>
+                <td class="text-center"><input type="text" class="input-plain text-center" value="PZA"></td>
+                <td><input type="number" class="input-plain text-end costo-usd bg-warning bg-opacity-10" value="0" step="0.01" onchange="calcularFila(this)"></td>
+                <td><input type="text" class="input-plain text-end precio-mxn input-readonly bg-success bg-opacity-10" readonly value="$0.00"></td>
+                <td class="text-end fw-bold importe">$0.00</td>
+                <td class="text-center"><button class="btn btn-link text-danger p-0" onclick="borrarFila(this)"><i class="fas fa-times"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function borrarFila(btn) {
+            btn.closest('tr').remove();
+            calcularTotales();
+        }
+
+        async function buscarClick(btn) {
+            const row = btn.closest('tr');
+            const modeloInput = row.querySelector('.modelo');
+            const query = modeloInput.value.trim();
+            const dolar = document.getElementById('tipoCambio').value;
+            
+            if(query.length < 3) { alert("Escribe al menos 3 letras"); return; }
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const res = await fetch(`/buscar_productos?q=${query}&dolar=${dolar}`);
+                const data = await res.json();
+                if(data.length > 0) {
+                    const p = data[0];
+                    modeloInput.value = p.modelo;
+                    row.querySelector('.desc').value = p.nombre.replace(/\[.*?\]\s*/, '');
+                    let costoUSD = (p.moneda === 'USD' || p.origen === 'SYSCOM') ? parseFloat(p.precio_usd || 0) : (parseFloat(p.precio_usd || 0) / parseFloat(dolar));
+                    row.querySelector('.costo-usd').value = costoUSD.toFixed(2);
+                    calcularFila(modeloInput);
+                } else { alert("No encontrado"); }
+            } catch(e) { console.error(e); }
+            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+        }
+
+        function calcularFila(element) {
+            const row = element.closest('tr');
+            const costoUSD = parseFloat(row.querySelector('.costo-usd').value) || 0;
+            const cantidad = parseFloat(row.querySelector('.qty').value) || 1;
+            const tc = parseFloat(document.getElementById('tipoCambio').value) || 19;
+            const margen = parseFloat(document.getElementById('margenGlobal').value) || 0.75;
+            
+            let precioVenta = (costoUSD * 1.16 * tc) / margen;
+            precioVenta = Math.ceil(precioVenta / 5) * 5;
+            
+            row.querySelector('.precio-mxn').value = `$${precioVenta.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            const importe = precioVenta * cantidad;
+            row.querySelector('.importe').innerText = `$${importe.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            row.dataset.importeRaw = importe;
+            calcularTotales();
+        }
+
+        function recalcularTodo() {
+            document.querySelectorAll('#tablaProductos tr').forEach(row => calcularFila(row.querySelector('.qty')));
+        }
+
+        // --- FUNCIÓN BLINDADA CONTRA ERRORES ---
+        function calcularTotales() {
+            let totalBruto = 0;
+            document.querySelectorAll('#tablaProductos tr').forEach(row => totalBruto += parseFloat(row.dataset.importeRaw) || 0);
+            
+            const totalFinal = totalBruto; 
+            const subtotal = totalFinal / 1.16;
+            const iva = totalFinal - subtotal;
+
+            // Verificamos que los elementos existan antes de escribir
+            const elSub = document.getElementById('lblSubtotal');
+            const elIva = document.getElementById('lblIVA');
+            const elTot = document.getElementById('lblTotal');
+
+            if(elSub) elSub.innerText = `$${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            if(elIva) elIva.innerText = `$${iva.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            if(elTot) elTot.innerText = `$${totalFinal.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            
+            return totalFinal;
+        }
+
+        async function generarPDF() {
+            const btn = document.querySelector('.btn-pdf');
+            const txtOriginal = btn.innerHTML;
+            
+            // 1. ACTIVAR SPINNER PRIMERO
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERANDO...';
+            btn.disabled = true;
+
+            try {
+                // 2. RECOLECTAR DATOS CON SEGURIDAD
+                const items = [];
+                document.querySelectorAll('#tablaProductos tr').forEach(row => {
+                    const modelo = row.querySelector('.modelo').value;
+                    if(!modelo) return;
+                    items.push({
+                        cantidad: row.querySelector('.qty').value,
+                        modelo: modelo,
+                        descripcion: row.querySelector('.desc').value,
+                        precio_unitario: parseFloat(row.querySelector('.precio-mxn').value.replace(/[$,]/g, '')),
+                        importe: parseFloat(row.querySelector('.importe').innerText.replace(/[$,]/g, ''))
+                    });
+                });
+
+                if(items.length === 0) { 
+                    alert("Agrega productos primero."); 
+                    throw new Error("Sin productos");
+                }
+
+                const radioIva = document.querySelector('input[name="tipoIva"]:checked');
+                const tipoIva = radioIva ? radioIva.value : 'incluido';
+
+                const vendedorSeleccionado = document.getElementById('vendedorSelect').value; 
+                // Leemos el valor del SELECT, no usamos "OFICINA" fijo.
+
+                const payload = {
+                    cliente: document.getElementById('nombreCliente').value || "MOSTRADOR",
+                    items: items,
+                    total_final: calcularTotales(),
+                    vendedor: vendedorSeleccionado, // Enviamos lo que seleccionaste
+                    tipo_iva: tipoIva
+                };
+
+                // 3. ENVIAR AL SERVIDOR
+                const res = await fetch('/api/generar_pdf_cotizacion', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                
+                if(data.status === 'success') {
+                    window.open(data.url, '_blank');
+                } else {
+                    alert('Error del Servidor: ' + data.message);
+                }
+
+            } catch(e) { 
+                console.error(e);
+                if(e.message !== "Sin productos") alert('Ocurrió un error al procesar la solicitud.');
+            } finally {
+                // 4. RESTAURAR BOTÓN SIEMPRE
+                btn.innerHTML = txtOriginal;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

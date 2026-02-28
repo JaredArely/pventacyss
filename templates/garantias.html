@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Garantías | CYSS{% endblock %}
+
+{% block content %}
+<div class="header-panel shadow rounded-3 p-4 mb-4" style="background: var(--cyss-dark); color: white;">
+    <div class="d-flex justify-content-between align-items-center">
+        <h3><i class="fas fa-shield-alt me-2"></i> Control de Garantías y Servicio</h3>
+        <button class="btn btn-light rounded-pill px-4 fw-bold" onclick="abrirModal()">
+            <i class="fas fa-plus me-2"></i> Nueva Recepción
+        </button>
+    </div>
+    <div class="input-group mb-4 shadow-sm">
+    <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+    <input type="text" id="busquedaSerie" class="form-control border-0" 
+           placeholder="Escanea o escribe el S/N (Serie), Folio o Cliente..." onkeyup="buscarGarantia()">
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0" id="tablaPrincipal">
+            <thead class="table-dark">
+                <tr>
+                    <th>Folio</th>
+                    <th>Tipo</th>
+                    <th>Cliente</th>
+                    <th>Equipo / Serie</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalGarantia" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Registrar Entrada de Equipo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Tipo de Garantía</label>
+                        <select id="tipo_servicio" class="form-select border-primary">
+                            <option value="MANTENIMIENTO">MANTENIMIENTO (PC/Impresoras)</option>
+                            <option value="PROVEEDOR">PROVEEDOR (Syscom/TVC)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Folio Interno</label>
+                        <input type="text" id="folio" class="form-control" placeholder="G-2026-001">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre del Cliente</label>
+                    <input type="text" id="cliente" class="form-control">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Modelo del Equipo</label>
+                        <input type="text" id="modelo" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Número de Serie (S/N)</label>
+                        <input type="text" id="serie" class="form-control" placeholder="Obligatorio para búsqueda">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Accesorios Dejados</label>
+                    <input type="text" id="accesorios" class="form-control" placeholder="Ej: Cargador, Cable USB, Cartuchos">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Falla / Diagnóstico Inicial</label>
+                    <textarea id="falla" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100 py-2 fw-bold" onclick="guardar()">
+                    <i class="fas fa-save me-2"></i> GUARDAR E IMPRIMIR TICKET
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const modal = new bootstrap.Modal(document.getElementById('modalGarantia'));
+
+    function filtrarGarantias() {
+        const input = document.getElementById('buscador').value.toUpperCase();
+        const filas = document.querySelectorAll('#tablaBody tr');
+        filas.forEach(fila => {
+            const texto = fila.innerText.toUpperCase();
+            fila.style.display = texto.includes(input) ? '' : 'none';
+        });
+    }
+
+    async function cargar() {
+        const res = await fetch('/api/garantias/obtener');
+        const datos = await res.json();
+        document.getElementById('tablaBody').innerHTML = datos.map(g => `
+            <tr>
+                <td class="fw-bold text-danger">${g.folio}</td>
+                <td><span class="badge ${g.tipo_servicio === 'PROVEEDOR' ? 'bg-secondary' : 'bg-primary'}">${g.tipo_servicio}</span></td>
+                <td>${g.cliente}</td>
+                <td>${g.modelo}<br><small class="text-muted">SN: ${g.serie}</small></td>
+                <td><span class="badge bg-info text-dark">${g.estado}</span></td>
+                <td class="text-center">
+                    <a href="/imprimir_garantia/${g.id}" target="_blank" class="btn btn-sm btn-outline-dark">
+                        <i class="fas fa-print"></i> Ticket
+                    </a>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Funciones abrirModal y guardar (agregando accesorios y tipo_servicio al payload)
+    async function guardar() {
+        const payload = {
+            tipo_servicio: document.getElementById('tipo_servicio').value,
+            folio: document.getElementById('folio').value,
+            cliente: document.getElementById('cliente').value,
+            modelo: document.getElementById('modelo').value,
+            serie: document.getElementById('serie').value,
+            accesorios: document.getElementById('accesorios').value,
+            falla: document.getElementById('falla').value
+        };
+        const res = await fetch('/api/garantias/guardar', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.status === 'success') {
+            modal.hide();
+            cargar();
+            window.open(`/imprimir_garantia/${data.id}`, '_blank');
+        }
+    }
+
+    function abrirModal() { modal.show(); }
+    cargar();
+
+    function buscarGarantia() {
+    let input = document.getElementById("busquedaSerie").value.toUpperCase();
+    let filas = document.querySelectorAll("#tablaBody tr");
+    filas.forEach(f => {
+        f.style.display = f.innerText.toUpperCase().includes(input) ? "" : "none";
+    });
+}
+</script>
+{% endblock %}

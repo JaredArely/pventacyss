@@ -1,0 +1,51 @@
+/* Paleta de Colores Oficial CYSS 2026 */
+:root {
+    --cyss-dark: #002060;
+    --cyss-blue: #004080;
+    --cyss-light: #f4f6f9;
+    --cyss-white: #ffffff;
+    --cyss-success: #28a745;
+    --cyss-danger: #dc3545;
+    /* Colores por Módulo */
+    --color-almacen: #0d6efd;
+    --color-calculadora: #0dcaf0;
+    --color-cotizador: #fd7e14;
+}
+
+/* Estilos Base Reutilizables */
+body {
+    background-color: var(--cyss-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.header-cyss {
+    background: linear-gradient(90deg, var(--cyss-dark) 0%, var(--cyss-blue) 100%);
+    color: var(--cyss-white);
+}
+
+.card-custom {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    background: var(--cyss-white);
+    transition: transform 0.3s ease;
+}
+
+.card-custom:hover {
+    transform: translateY(-5px);
+}
+.card-menu {
+    transition: all 0.3s ease;
+    border-radius: 15px;
+    background: white;
+}
+
+.card-menu:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+}
+
+.icon-box {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+}

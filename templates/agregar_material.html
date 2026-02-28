@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Producto | CYSS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .bg-cyss { background-color: #002060; color: white; }
+        .card-form { border-top: 5px solid #002060; }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold text-dark"><i class="fas fa-box-open text-primary"></i> Registrar Nuevo Equipo</h3>
+                    <button class="btn btn-outline-secondary" onclick="window.location.href='/inventario'">
+                        <i class="fas fa-arrow-left"></i> Cancelar
+                    </button>
+                </div>
+
+                <div class="card shadow card-form">
+                    <div class="card-body p-4">
+                        <p class="text-muted mb-4">Ingresa los datos del nuevo producto y selecciona a qué almacén ingresará físicamente.</p>
+
+                        <form id="formNuevo" onsubmit="event.preventDefault(); guardarProducto();">
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Modelo *</label>
+                                    <input type="text" id="newModelo" class="form-control" placeholder="Ej: DS-2CE..." required>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Descripción *</label>
+                                    <input type="text" id="newDesc" class="form-control" placeholder="Ej: CÁMARA DOMO 2MP..." required>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Proveedor / Marca</label>
+                                    <input type="text" id="newProv" class="form-control" placeholder="HIKVISION, EPCOM...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Categoría</label>
+                                    <select class="form-select">
+                                        <option>CCTV</option>
+                                        <option>Redes</option>
+                                        <option>Alarmas</option>
+                                        <option>Accesorio</option>
+                                        <option>Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <h5 class="text-primary mb-3"><i class="fas fa-map-marker-alt"></i> Ubicación y Costo</h5>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info d-flex align-items-center p-2">
+                                        <i class="fas fa-info-circle me-2 fs-4"></i>
+                                        <div>
+                                            <strong>¿A dónde llega la mercancía?</strong>
+                                            <select id="newSucursal" class="form-select border-primary fw-bold mt-1">
+                                                <option value="ARAUCARIAS">📍 SUCURSAL ARAUCARIAS (Matriz)</option>
+                                                <option value="AMERICAS">📍 SUCURSAL AMÉRICAS</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Moneda Costo</label>
+                                    <select id="newMoneda" class="form-select">
+                                        <option value="MXN">Pesos (MXN)</option>
+                                        <option value="USD">Dólares (USD)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Costo de Compra *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" id="newPrecio" class="form-control" placeholder="0.00" required>
+                                    </div>
+                                    <small class="text-muted">Sin IVA</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Cantidad Inicial *</label>
+                                    <input type="number" id="newStock" class="form-control" value="1" min="0" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-5">
+                                <button type="submit" class="btn btn-primary btn-lg bg-cyss border-0">
+                                    <i class="fas fa-save me-2"></i> Guardar e Ingresar al Inventario
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function guardarProducto() {
+            const btn = document.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            const payload = {
+                modelo: document.getElementById('newModelo').value.trim(),
+                nombre: document.getElementById('newDesc').value.trim(),
+                proveedor: document.getElementById('newProv').value.trim(),
+                moneda: document.getElementById('newMoneda').value,
+                precio: document.getElementById('newPrecio').value,
+                stock: document.getElementById('newStock').value,
+                sucursal: document.getElementById('newSucursal').value // <--- Aquí enviamos la sucursal seleccionada
+            };
+
+            fetch('/api/crear_producto_manual', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if(data.status === 'success'){
+                    alert('✅ Producto registrado exitosamente en ' + payload.sucursal);
+                    window.location.href = '/inventario'; // Regresamos a la lista
+                } else {
+                    alert('❌ Error: ' + data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-2"></i> Guardar e Ingresar al Inventario';
+                }
+            })
+            .catch(err => {
+                alert('Error de conexión');
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

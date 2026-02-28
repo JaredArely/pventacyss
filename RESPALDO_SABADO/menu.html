@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal | CYSS V12</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --cyss-dark: #002060; }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        .card-menu {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 15px;
+            background: white; /* FONDO BLANCO */
+        }
+        .card-menu:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+        }
+        .icon-box { font-size: 3.5rem; margin-bottom: 1rem; }
+        .navbar-cyss { background-color: var(--cyss-dark); color: white; }
+
+        /* ESTILOS UNIFICADOS */
+        .text-cotizador { color: #28a745; }
+        .btn-outline-cotizador { color: #28a745; border-color: #28a745; font-weight: 600; }
+        .btn-outline-cotizador:hover { background-color: #28a745; color: white; }
+
+        .text-syscom { color: #6c757d; }
+        .btn-outline-syscom { color: #6c757d; border-color: #6c757d; font-weight: 600; }
+        .btn-outline-syscom:hover { background-color: #6c757d; color: white; }
+
+        .text-ventas { color: #6610f2; }
+        .btn-outline-ventas { color: #6610f2; border-color: #6610f2; font-weight: 600; }
+        .btn-outline-ventas:hover { background-color: #6610f2; color: white; }
+
+        .text-almacen { color: #6f42c1; }
+        .btn-outline-almacen { color: #6f42c1; border-color: #6f42c1; font-weight: 600; }
+        .btn-outline-almacen:hover { background-color: #6f42c1; color: white; }
+
+        .text-salida { color: #dc3545; }
+        .btn-outline-salida { color: #dc3545; border-color: #dc3545; font-weight: 600; }
+        .btn-outline-salida:hover { background-color: #dc3545; color: white; }
+
+        .text-calculadora { color: #198754; }
+        .btn-outline-calculadora { color: #198754; border-color: #198754; font-weight: 600; }
+        .btn-outline-calculadora:hover { background-color: #198754; color: white; }
+
+        .text-ordenes { color: #ffc107; }
+        .btn-outline-ordenes { color: #ffca2c; border-color: #ffca2c; font-weight: 600; color: #b88c06; }
+        .btn-outline-ordenes:hover { background-color: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-cyss p-3 mb-5 shadow">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="h4 mb-0"><i class="fas fa-network-wired me-2"></i> SISTEMA CYSS V12</div>
+            <div class="d-flex align-items-center">
+                <div class="text-end me-3">
+                    <small class="d-block opacity-75">Sucursal Actual</small>
+                    <span class="fw-bold text-uppercase">{{ sucursal if sucursal else 'SISTEMA CENTRAL' }}</span>
+                </div>
+                <div class="text-end border-start ps-3 border-light">
+                    <small class="d-block opacity-75">Usuario</small>
+                    <span class="fw-bold">{{ user if user else 'Usuario' }}</span>
+                </div>
+                <div class="ms-3">
+                     <a href="/login" class="btn btn-sm btn-outline-light">Salir</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold text-dark">Panel de Control</h2>
+            <p class="text-muted">Bienvenido, selecciona un módulo</p>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-cotizador"><i class="fas fa-file-invoice"></i></div>
+                    <h4 class="fw-bold">Nuevo Cotizador</h4>
+                    <p class="text-muted small">Formato Excel Profesional</p>
+                    <div class="mt-auto">
+                        <a href="/nuevo_cotizador" class="btn btn-outline-cotizador rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-syscom"><i class="fas fa-flask"></i></div>
+                    <h4 class="fw-bold">Lab. Syscom</h4>
+                    <p class="text-muted small">Pruebas de Conexión</p>
+                    <div class="mt-auto">
+                        <a href="/laboratorio_syscom" class="btn btn-outline-syscom rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-ventas"><i class="fas fa-shopping-cart"></i></div>
+                    <h4 class="fw-bold">Punto de Venta</h4>
+                    <p class="text-muted small">Caja Rápida</p>
+                    <div class="mt-auto">
+                        <a href="/ventas" class="btn btn-outline-ventas rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-almacen"><i class="fas fa-boxes"></i></div>
+                    <h4 class="fw-bold">Almacén</h4>
+                    <p class="text-muted small">Consultar existencias</p>
+                    <div class="mt-auto">
+                        <a href="/inventario" class="btn btn-outline-almacen rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-salida"><i class="fas fa-tools"></i></div>
+                    <h4 class="fw-bold">Salida Material</h4>
+                    <p class="text-muted small">Control de técnicos</p>
+                    <div class="mt-auto">
+                        <a href="/material_tecnico" class="btn btn-outline-salida rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-calculadora"><i class="fas fa-calculator"></i></div>
+                    <h4 class="fw-bold">Calculadora</h4>
+                    <p class="text-muted small">Cálculo de utilidades</p>
+                    <div class="mt-auto">
+                        <a href="/calculadora" class="btn btn-outline-calculadora rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                    <div class="icon-box text-ordenes"><i class="fas fa-clipboard-list"></i></div>
+                    <h4 class="fw-bold">Órdenes</h4>
+                    <p class="text-muted small">Seguimiento de órdenes</p>
+                    <div class="mt-auto">
+                        <a href="/ordenes" class="btn btn-outline-ordenes rounded-pill px-4 w-100">Ingresar <i class="fas fa-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="text-center mt-5 py-4 text-muted"><small>&copy; 2026 Computadoras y Sistemas del Sureste</small></footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

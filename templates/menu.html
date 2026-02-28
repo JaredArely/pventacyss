@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Menú Principal | CYSS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4 justify-content-center">
+        
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-warning"><i class="fas fa-file-invoice-dollar"></i></div>
+                <h4 class="fw-bold">Nuevo Cotizador</h4>
+                <p class="text-muted small">Generar cotización PDF</p>
+                <div class="mt-auto">
+                    <a href="/nuevo_cotizador" class="btn btn-outline-warning rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-primary"><i class="fas fa-warehouse"></i></div>
+                <h4 class="fw-bold">Almacén</h4>
+                <p class="text-muted small">Inventario y Stock</p>
+                <div class="mt-auto">
+                    <a href="/inventario" class="btn btn-outline-primary rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-info"><i class="fas fa-calculator"></i></div>
+                <h4 class="fw-bold">Calculadora</h4>
+                <p class="text-muted small">Cálculo de utilidades</p>
+                <div class="mt-auto">
+                    <a href="/calculadora" class="btn btn-outline-info rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        {% if session['rol'] in ['admin', 'operador'] %}
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-danger"><i class="fas fa-shield-alt"></i></div>
+                <h4 class="fw-bold">Garantías</h4>
+                <p class="text-muted small">Servicio técnico y reportes</p>
+                <div class="mt-auto">
+                    <a href="/garantias" class="btn btn-outline-danger rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-success"><i class="fas fa-cash-register"></i></div>
+                <h4 class="fw-bold">Punto de Venta</h4>
+                <p class="text-muted small">Ventas directas y notas</p>
+                <div class="mt-auto">
+                    <a href="/punto_venta" class="btn btn-outline-success rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-secondary"><i class="fas fa-truck-loading"></i></div>
+                <h4 class="fw-bold">Salida Material</h4>
+                <p class="text-muted small">Entrega de equipos técnicos</p>
+                <div class="mt-auto">
+                    <a href="/salida_material" class="btn btn-outline-secondary rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box text-dark"><i class="fas fa-clipboard-list"></i></div>
+                <h4 class="fw-bold">Órdenes</h4>
+                <p class="text-muted small">Seguimiento de pedidos</p>
+                <div class="mt-auto">
+                    <a href="/ordenes" class="btn btn-outline-dark rounded-pill px-4 w-100">Ingresar</a>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+
+
+        {% if session['rol'] == 'admin' %}
+        <div class="col-md-4">
+            <div class="card card-menu h-100 shadow-sm border-0 text-center p-4">
+                <div class="icon-box" style="color: #002060;"><i class="fas fa-flask"></i></div>
+                <h4 class="fw-bold">Lab Syscom</h4>
+                <p class="text-muted small">Pruebas e integraciones</p>
+                <div class="mt-auto">
+                    <a href="/lab_syscom" class="btn btn-outline-dark rounded-pill px-4 w-100" style="border-color: #002060; color: #002060;">Ingresar</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

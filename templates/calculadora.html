@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}CALCULADORA | CYSS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-panel shadow">
+        <div class="d-flex justify-content-between align-items-center">
+            <h3>🧮 Calculadora de Costos CYSS</h3>
+            <div class="d-flex align-items-center gap-2">
+                <label>TIPO DE CAMBIO (HOY): $</label>
+                <input type="number" id="globalDolar" class="form-control input-dolar" value="{{ dolar_default }}" oninput="recalcularTodo()">
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover table-calc mb-0">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="25%">Descripción (Opcional)</th>
+                        <th width="15%">Costo USD</th>
+                        <th width="15%">Costo c/IVA (MXN)</th>
+                        <th width="20%">Margen Utilidad</th>
+                        <th width="15%">PRECIO PÚBLICO</th>
+                        <th width="5%">X</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody">
+                    </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-center">
+            <button class="btn btn-primary rounded-pill px-4" onclick="agregarFila()">+ Agregar Producto</button>
+            <a href="/" class="btn btn-secondary rounded-pill px-4 ms-2">Volver al Menú</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables traidas desde Python (app.py)
+    const mPublico = {{ m_publico }};
+    const mPreferente = {{ m_preferente }};
+    const mIntegrador = {{ m_integrador }};
+    let contador = 0;
+
+    function agregarFila() {
+        contador++;
+        const tbody = document.getElementById('tablaBody');
+        const tr = document.createElement('tr');
+        tr.id = `fila-${contador}`;
+        
+        tr.innerHTML = `
+            <td class="text-center align-middle">${contador}</td>
+            <td><input type="text" class="form-control form-control-sm" placeholder="Nombre del producto..."></td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control usd-input" step="0.01" oninput="calcularFila(${contador})" placeholder="0.00">
+                </div>
+            </td>
+            <td class="text-center align-middle" id="costo-iva-${contador}">$ 0.00</td>
+            <td>
+                <select class="form-select form-select-sm margen-select" onchange="calcularFila(${contador})">
+                    <option value="${mPublico}">Público (${(1-mPublico)*100|0}%) / Div .75</option>
+                    <option value="${mPreferente}">Preferente (${(1-mPreferente)*100|0}%) / Div .80</option>
+                    <option value="${mIntegrador}">Integrador (${(1-mIntegrador)*100|0}%) / Div .90</option>
+                    <option value="custom">Manual...</option>
+                </select>
+                <input type="number" class="form-control form-control-sm d-none mt-1" id="margen-manual-${contador}" placeholder="Ej: 0.85" step="0.01" oninput="calcularFila(${contador})">
+            </td>
+            <td class="text-center align-middle fs-5 resultado" id="precio-final-${contador}">$ 0.00</td>
+            <td class="text-center align-middle">
+                <button class="btn btn-danger btn-sm" onclick="eliminarFila(${contador})">×</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcularFila(id) {
+        // 1. Obtener valores
+        const dolar = parseFloat(document.getElementById('globalDolar').value) || 0;
+        const fila = document.getElementById(`fila-${id}`);
+        if (!fila) return;
+
+        const usdInput = fila.querySelector('.usd-input').value;
+        const usd = parseFloat(usdInput) || 0;
+        
+        const selectMargen = fila.querySelector('.margen-select');
+        let margen = parseFloat(selectMargen.value);
+
+        // Manejo de margen manual
+        const inputManual = document.getElementById(`margen-manual-${id}`);
+        if (selectMargen.value === 'custom') {
+            inputManual.classList.remove('d-none');
+            margen = parseFloat(inputManual.value) || 1; // Evitar división por cero
+        } else {
+            inputManual.classList.add('d-none');
+        }
+
+        // 2. LÓGICA DE CÁLCULO (Según tu Excel)
+        // Costo Base en MXN con IVA = USD * Dolar * 1.16
+        const costoConIva = usd * dolar * 1.16;
+        
+        // Precio Venta = CostoConIva / Margen
+        const precioFinal = costoConIva / margen;
+
+        // 3. Actualizar interfaz
+        document.getElementById(`costo-iva-${id}`).innerText = `$ ${costoConIva.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById(`precio-final-${id}`).innerText = `$ ${precioFinal.toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
+
+    function recalcularTodo() {
+        const filas = document.querySelectorAll('tbody tr');
+        filas.forEach(tr => {
+            const id = tr.id.split('-')[1];
+            calcularFila(id);
+        });
+    }
+
+    function eliminarFila(id) {
+        document.getElementById(`fila-${id}`).remove();
+    }
+
+    // Agregar primera fila al iniciar
+    document.addEventListener('DOMContentLoaded', agregarFila);
+</script>
+
+{% endblock %}

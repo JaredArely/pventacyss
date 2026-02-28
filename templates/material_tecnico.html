@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Salida Material - CYSS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .bg-cyss { background-color: #002060; color: white; }
+        .text-cyss { color: #002060; font-weight: bold; }
+        .btn-cyss { background-color: #002060; color: white; border: none; }
+        .excel-header { border: 2px solid #002060; padding: 10px; background: white; margin-bottom: 20px; }
+        .logo-box { width: 150px; text-align: center; }
+        .info-box { border-left: 2px solid #002060; padding-left: 15px; }
+        .nav-tabs .nav-link.active { background-color: #002060; color: white; border-color: #002060; }
+        .nav-tabs .nav-link { color: #002060; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-cyss shadow-sm">
+    <div class="container-fluid px-4">
+        <span class="navbar-brand mb-0 h1"><i class="fas fa-tools"></i> Control de Técnicos</span>
+        <button class="btn btn-outline-light btn-sm" onclick="location.href='/'">← Volver al Menú</button>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="salida-tab" data-bs-toggle="tab" data-bs-target="#salida-pane" type="button"><i class="fas fa-sign-out-alt"></i> Nueva Salida</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="check-tab" data-bs-toggle="tab" data-bs-target="#check-pane" type="button" onclick="cargarPendientes()"><i class="fas fa-tasks"></i> Check / Devoluciones</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="reporte-tab" data-bs-toggle="tab" data-bs-target="#reporte-pane" type="button" onclick="cargarHistorial()"><i class="fas fa-file-excel"></i> Reportes e Historial</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        
+        <div class="tab-pane fade show active" id="salida-pane">
+            <div class="excel-header d-flex align-items-center shadow-sm">
+                <div class="logo-box">
+                    <h1 class="text-cyss m-0" style="font-size: 3rem;"><i class="fas fa-globe"></i></h1>
+                    <small class="fw-bold">CYSS</small>
+                </div>
+                <div class="info-box flex-grow-1 ms-3">
+                    <h4 class="text-cyss mb-0">COMPUTADORAS Y SISTEMAS DEL SURESTE</h4>
+                    <p class="mb-0 small">Av. Araucarias #262 Fracc. Indeco Animas, Xalapa, Ver.</p>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span class="badge bg-warning text-dark fs-6 rounded-0 border border-dark">RELACIÓN DE MATERIAL A INSTALAR</span>
+                        <div class="text-end"><strong>FECHA:</strong> <span id="fechaHoy"></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold text-cyss">1. Técnicos</div>
+                        <div class="card-body">
+                            <label class="mb-2 text-muted">Selecciona quién va:</label>
+                            <div class="form-check"><input class="form-check-input tecnico-check" type="checkbox" value="Lalo" id="cLalo"><label class="form-check-label" for="cLalo">👤 Lalo</label></div>
+                            <div class="form-check"><input class="form-check-input tecnico-check" type="checkbox" value="Josue" id="cJosue"><label class="form-check-label" for="cJosue">👤 Josue</label></div>
+                            <div class="form-check"><input class="form-check-input tecnico-check" type="checkbox" value="Octavio" id="cOct"><label class="form-check-label" for="cOct">👤 Octavio</label></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold text-cyss">2. Agregar Material</div>
+                        <div class="card-body">
+                            <div class="input-group mb-2">
+                                <input type="text" id="busqueda" class="form-control" placeholder="Buscar material..." onkeypress="if(event.key==='Enter') buscar()">
+                                <button class="btn btn-cyss" onclick="buscar()">Buscar</button>
+                            </div>
+                            <div id="resultados" class="list-group" style="max-height: 150px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow border-0 mt-2 mb-3">
+                <div class="card-header bg-secondary text-white fw-bold">Lista de Materiales</div>
+                <table class="table table-bordered mb-0 align-middle text-center">
+                    <thead class="bg-light">
+                        <tr><th width="15%">CANTIDAD</th><th width="65%">DESCRIPCIÓN</th><th width="15%">CÓDIGO</th><th></th></tr>
+                    </thead>
+                    <tbody id="tablaSalida" class="bg-white"></tbody>
+                </table>
+            </div>
+
+            <div class="card shadow border-0 border-top-0 border-primary mb-4" style="border-top: 5px solid #002060 !important;">
+                <div class="card-header bg-white fw-bold text-cyss d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-ethernet"></i> CONTROL DE BOBINAS / CABLE</span>
+                </div>
+                <div class="card-body bg-light">
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-md-5">
+                            <label class="small fw-bold">Descripción Bobina</label>
+                            <input type="text" id="txtBobina" class="form-control" placeholder="Ej. Cat5e Gris (Caja 1)">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small fw-bold">Metraje Salida (Marcado en cable)</label>
+                            <input type="number" id="txtMetraje" class="form-control text-center" placeholder="Ej. 305">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary w-100" onclick="agregarBobina()">+ Agregar</button>
+                        </div>
+                    </div>
+                    
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr class="table-info"><th>Bobina</th><th class="text-center">Metraje Inicial</th><th></th></tr></thead>
+                        <tbody id="tablaBobinas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mb-5">
+                <button class="btn btn-success btn-lg" onclick="confirmarSalida()"><i class="fas fa-save"></i> REGISTRAR SALIDA COMPLETA</button>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="check-pane">
+            <h5 class="text-cyss mb-3">Servicios Pendientes de Revisión</h5>
+            <div id="listaPendientes" class="row g-3"></div>
+        </div>
+
+        <div class="tab-pane fade" id="reporte-pane">
+            <div class="d-flex justify-content-between mb-3">
+                <h5 class="text-cyss">Historial</h5>
+                <div>
+                    <input type="text" id="filtroTecnico" class="form-control d-inline-block w-auto" placeholder="Filtrar por técnico..." onkeyup="filtrarTablaReporte()">
+                    <button class="btn btn-outline-success ms-2" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+                </div>
+            </div>
+            <div class="table-responsive bg-white shadow-sm p-3">
+                <table class="table table-striped" id="tablaReportes">
+                    <thead class="table-dark"><tr><th>Fecha</th><th>Folio</th><th>Técnicos</th><th>Material Usado</th><th>Cables Usados</th></tr></thead>
+                    <tbody id="bodyReportes"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCheck" tabindex="-1">
+    <div class="modal-dialog modal-xl"> <div class="modal-content">
+            <div class="modal-header bg-cyss text-white">
+                <h5 class="modal-title">✅ Revisión de Servicio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="idSalidaActiva">
+                
+                <h6 class="text-primary fw-bold border-bottom pb-2">1. Materiales (Equipos)</h6>
+                <table class="table table-bordered mb-4">
+                    <thead class="table-light"><tr><th>Material</th><th>Se Llevó</th><th>Se Usó</th><th>Se Devuelve</th></tr></thead>
+                    <tbody id="bodyModalCheckMaterial"></tbody>
+                </table>
+
+                <h6 class="text-primary fw-bold border-bottom pb-2">2. Bobinas / Cableado</h6>
+                <p class="small text-muted">Ingresa el metraje que marca el cable al regresar.</p>
+                <table class="table table-bordered">
+                    <thead class="table-light"><tr><th>Bobina</th><th class="text-center">Inicio (Salida)</th><th class="text-center">Fin (Regreso)</th><th class="text-center bg-warning bg-opacity-10">Metros Gastados</th></tr></thead>
+                    <tbody id="bodyModalCheckBobinas"></tbody>
+                </table>
+
+                <div class="mt-3">
+                    <label class="fw-bold">Observaciones Generales:</label>
+                    <textarea id="obsCheck" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarCheckFinal()">💾 Finalizar Servicio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let listaSalida = [];
+let listaBobinas = [];
+document.getElementById('fechaHoy').innerText = new Date().toLocaleDateString('es-MX');
+
+// --- BÚSQUEDA MATERIAL ---
+function buscar() {
+    const q = document.getElementById('busqueda').value;
+    if(!q) return;
+    document.getElementById('resultados').innerHTML = '<div class="p-2">Buscando...</div>';
+    fetch(`/buscar_productos?q=${q}`).then(r=>r.json()).then(data => {
+        let html = '';
+        data.forEach(p => html += `<a href="#" class="list-group-item list-group-item-action" onclick='agregar(${JSON.stringify(p)})'><strong>${p.modelo}</strong> - ${p.nombre}</a>`);
+        document.getElementById('resultados').innerHTML = html || '<div class="text-danger p-2">No encontrado</div>';
+    });
+}
+function agregar(p) {
+    let ex = listaSalida.find(i=>i.modelo===p.modelo);
+    if(ex) ex.cantidad++; else { p.cantidad=1; listaSalida.push(p); }
+    renderizarSalida();
+    document.getElementById('resultados').innerHTML='';
+    document.getElementById('busqueda').value='';
+}
+function renderizarSalida() {
+    const tb = document.getElementById('tablaSalida');
+    tb.innerHTML = listaSalida.map((p,i) => `<tr>
+        <td><input type="number" class="form-control text-center fw-bold" value="${p.cantidad}" onchange="listaSalida[${i}].cantidad=this.value"></td>
+        <td class="text-start ps-3">${p.nombre}</td><td>${p.modelo}</td>
+        <td><button class="btn btn-sm text-danger" onclick="eliminar(${i})"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('');
+}
+function eliminar(i) { listaSalida.splice(i,1); renderizarSalida(); }
+
+// --- BOBINAS ---
+function agregarBobina() {
+    const nombre = document.getElementById('txtBobina').value;
+    const metraje = document.getElementById('txtMetraje').value;
+    if(!nombre || !metraje) return alert("Ingresa nombre y metraje");
+    listaBobinas.push({ nombre: nombre, inicio: metraje });
+    renderizarBobinas();
+    document.getElementById('txtBobina').value=''; document.getElementById('txtMetraje').value='';
+}
+function renderizarBobinas() {
+    document.getElementById('tablaBobinas').innerHTML = listaBobinas.map((b,i) => `
+        <tr><td>${b.nombre}</td><td class="text-center fw-bold">${b.inicio} m</td>
+        <td><button class="btn btn-sm text-danger" onclick="listaBobinas.splice(${i},1);renderizarBobinas()">x</button></td></tr>
+    `).join('');
+}
+
+// --- CONFIRMAR SALIDA ---
+function confirmarSalida() {
+    let tecs = [];
+    document.querySelectorAll('.tecnico-check:checked').forEach(c => tecs.push(c.value));
+    if(tecs.length===0) return alert("Selecciona técnicos");
+    if(listaSalida.length===0 && listaBobinas.length===0) return alert("Agrega materiales o bobinas");
+
+    if(!confirm("¿Registrar salida?")) return;
+
+    fetch('/api/tecnicos/guardar_salida', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ tecnicos: tecs, items: listaSalida, bobinas: listaBobinas })
+    }).then(r=>r.json()).then(res => {
+        if(res.status==='success') {
+            alert("✅ Salida Registrada");
+            location.reload(); 
+        } else alert("Error: "+res.message);
+    });
+}
+
+// --- CHECK ---
+function cargarPendientes() {
+    fetch('/api/tecnicos/obtener_pendientes').then(r=>r.json()).then(data => {
+        const div = document.getElementById('listaPendientes');
+        if(data.length===0) { div.innerHTML='<div class="alert alert-success">Todo al día.</div>'; return; }
+        div.innerHTML = data.map(s => `
+            <div class="col-md-6"><div class="card border-primary h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between"><strong>#${s.folio}</strong><span>${s.fecha}</span></div>
+                <div class="card-body">
+                    <h5 class="text-cyss">👷 ${s.tecnicos}</h5>
+                    <p class="text-muted">${s.items.length} materiales | ${s.bobinas.length} bobinas</p>
+                    <button class="btn btn-warning w-100" onclick='abrirCheck(${JSON.stringify(s)})'>Realizar Check</button>
+                </div>
+            </div></div>`).join('');
+    });
+}
+
+let checkAct = null;
+function abrirCheck(s) {
+    checkAct = s;
+    document.getElementById('idSalidaActiva').value = s.id;
+    // Materiales
+    document.getElementById('bodyModalCheckMaterial').innerHTML = s.items.map((it,i) => `
+        <tr><td>${it.nombre}</td><td class="text-center fw-bold">${it.cantidad}</td>
+        <td><input type="number" class="form-control text-center border-success fw-bold" value="${it.cantidad}" 
+             onchange="calcMat(${i},this.value,${it.cantidad})"></td>
+        <td class="text-center text-primary fw-bold" id="devMat_${i}">0</td></tr>
+    `).join('');
+    // Bobinas
+    document.getElementById('bodyModalCheckBobinas').innerHTML = s.bobinas.map((b,i) => `
+        <tr><td>${b.nombre}</td><td class="text-center">${b.inicio}</td>
+        <td><input type="number" class="form-control text-center" placeholder="Regreso" 
+             onchange="calcBob(${i},this.value,${b.inicio})"></td>
+        <td class="text-center fw-bold fs-5 text-danger" id="gastoBob_${i}">0 m</td></tr>
+    `).join('');
+    new bootstrap.Modal(document.getElementById('modalCheck')).show();
+}
+
+function calcMat(i,usado,llevado) {
+    let dev = parseInt(llevado)-parseInt(usado);
+    document.getElementById(`devMat_${i}`).innerText = dev<0?0:dev;
+    checkAct.items[i].usado_real = usado;
+}
+function calcBob(i,regreso,inicio) {
+    let gasto = parseInt(inicio)-parseInt(regreso);
+    document.getElementById(`gastoBob_${i}`).innerText = gasto + " m";
+    checkAct.bobinas[i].regreso = regreso;
+    checkAct.bobinas[i].gasto = gasto;
+}
+
+function guardarCheckFinal() {
+    // Validar items
+    checkAct.items.forEach(i => { if(i.usado_real===undefined) i.usado_real=i.cantidad; });
+    
+    fetch('/api/tecnicos/finalizar_servicio', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ 
+            id: checkAct.id, items: checkAct.items, bobinas: checkAct.bobinas, 
+            observaciones: document.getElementById('obsCheck').value 
+        })
+    }).then(r=>r.json()).then(res => {
+        if(res.status==='success') { 
+            alert("✅ Finalizado"); 
+            bootstrap.Modal.getInstance(document.getElementById('modalCheck')).hide();
+            cargarPendientes();
+        }
+    });
+}
+
+// --- REPORTES ---
+function cargarHistorial() {
+    fetch('/api/tecnicos/historial').then(r=>r.json()).then(data => {
+        document.getElementById('bodyReportes').innerHTML = data.map(r => {
+            let mat = r.items.map(i=>`<small>${i.cantidad}x ${i.modelo}</small>`).join(', ');
+            let bob = r.bobinas.map(b=>`<small>${b.nombre}: ${b.gasto}m</small>`).join(', ');
+            return `<tr><td>${r.fecha}</td><td><b>#${r.folio}</b></td><td>${r.tecnicos}</td>
+            <td><div style="max-height:50px;overflow-y:auto">${mat}</div></td>
+            <td><div style="max-height:50px;overflow-y:auto" class="text-danger">${bob}</div></td></tr>`;
+        }).join('');
+    });
+}
+function filtrarTablaReporte() {
+    const f = document.getElementById('filtroTecnico').value.toLowerCase();
+    for(let tr of document.querySelectorAll('#bodyReportes tr')) 
+        tr.style.display = tr.innerText.toLowerCase().includes(f)?'':'none';
+}
+</script>
+</body>
+</html>

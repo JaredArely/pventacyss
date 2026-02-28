@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CYSS - Órdenes de Trabajo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --cyss-blue: #002d72; --cyss-orange: #ff6720; }
+        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Estilo del Encabezado */
+        .navbar-cyss { background-color: var(--cyss-blue); color: white; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        /* Card Principal */
+        .main-card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .table-thead { background-color: var(--cyss-blue); color: white; }
+        
+        /* Badges de Estatus Automáticos */
+        .badge-terminado { background-color: #28a745; color: white; }
+        .badge-pendiente { background-color: #ffc107; color: #212529; }
+        .badge-proceso { background-color: #17a2b8; color: white; }
+        .badge-default { background-color: #6c757d; color: white; }
+
+        .btn-cyss { background-color: var(--cyss-blue); color: white; border-radius: 8px; }
+        .btn-cyss:hover { background-color: #001f4d; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="navbar-cyss d-flex justify-content-between align-items-center">
+    <h4 class="m-0">📦 Gestión de Órdenes de Trabajo</h4>
+    <div>
+        <button class="btn btn-light btn-sm" onclick="location.href='/'">🏠 Menú Principal</button>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <div class="card main-card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-4">
+                <div class="search-box w-50">
+                    <input type="text" id="busqueda" class="form-control" placeholder="🔍 Buscar por cliente o folio..." onkeyup="filtrar()">
+                </div>
+                <div>
+                    <input type="file" id="inputExcel" style="display:none" onchange="subirExcel()">
+                    <button class="btn btn-success" onclick="document.getElementById('inputExcel').click()">📤 Importar Excel</button>
+                    <button class="btn btn-cyss" onclick="nuevaOrden()">+ Nueva Orden</button>
+					<button class="btn btn-danger" onclick="exportarPDF()">📕 Exportar PDF</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-thead">
+                        <tr>
+                            <th class="ps-3">FOLIO</th>
+                            <th>FECHA</th>
+                            <th>CLIENTE</th>
+                            <th>ESTATUS</th>
+                            <th>PAGO</th>
+                            <th>MÉTODO</th>
+                            <th class="text-center">ACCIONES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-cuerpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Cargar datos al abrir
+    window.onload = cargarOrdenes;
+
+    function cargarOrdenes() {
+        fetch('/api/obtener_ordenes')
+            .then(res => res.json())
+            .then(data => renderTabla(data));
+    }
+
+    function renderTabla(data) {
+        const tbody = document.getElementById('tabla-cuerpo');
+        tbody.innerHTML = '';
+        
+        data.forEach(o => {
+            // Lógica de colores para Estatus
+            let claseBadge = 'badge-default';
+            const est = (o.estatus || '').toUpperCase();
+            if(est.includes('TERMINADO') || est.includes('CONCLUIDO')) claseBadge = 'badge-terminado';
+            if(est.includes('PENDIENTE') || est.includes('FALTA')) claseBadge = 'badge-pendiente';
+            if(est.includes('PROCESO')) claseBadge = 'badge-proceso';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="ps-3 fw-bold text-primary">#${o.folio}</td>
+                    <td>${o.fecha_fmt || '-'}</td>
+                    <td class="fw-bold">${o.cliente}</td>
+                    <td><span class="badge ${claseBadge} p-2">${o.estatus || 'RECIBIDO'}</span></td>
+                    <td><small class="text-muted">${o.pagado || ''}</small></td>
+                    <td>${o.metodo_pago || ''}</td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-primary btn-sm" onclick="editar(${o.id})">✏️</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function subirExcel() {
+        const file = document.getElementById('inputExcel').files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/api/importar_ordenes_csv', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message);
+                cargarOrdenes();
+            });
+    }
+
+    function filtrar() {
+        const term = document.getElementById('busqueda').value.toLowerCase();
+        const filas = document.querySelectorAll('#tabla-cuerpo tr');
+        filas.forEach(f => {
+            f.style.display = f.innerText.toLowerCase().includes(term) ? '' : 'none';
+        });
+    }
+function exportarPDF() {
+    // Obtenemos solo las órdenes que se están viendo actualmente en la tabla
+    const filas = document.querySelectorAll('#tabla-cuerpo tr');
+    const datosParaPdf = [];
+
+    filas.forEach(f => {
+        if (f.style.display !== 'none') {
+            const c = f.cells;
+            datosParaPdf.push({
+                folio: c[0].innerText.replace('#', ''),
+                fecha_fmt: c[1].innerText,
+                cliente: c[2].innerText,
+                estatus: c[3].innerText,
+                pagado: c[4].innerText
+            });
+        }
+    });
+
+    if (datosParaPdf.length === 0) return alert("No hay datos para exportar");
+
+    fetch('/api/ordenes/exportar_pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaPdf)
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.status === 'success') {
+            window.open(res.archivo, '_blank');
+        } else {
+            alert("Error al generar PDF: " + res.message);
+        }
+    });
+}
+</script>
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #002d72; color: white;">
+                <h5 class="modal-title">Editar Orden</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit_id">
+                <div class="mb-3">
+                    <label>Folio</label>
+                    <input type="text" id="edit_folio" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Cliente</label>
+                    <input type="text" id="edit_cliente" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label>Estatus</label>
+                    <select id="edit_estatus" class="form-select">
+                        <option value="RECIBIDO">RECIBIDO</option>
+                        <option value="PROCESO">EN PROCESO</option>
+                        <option value="TERMINADO">TERMINADO</option>
+                        <option value="FALTA REPETIDOR">FALTA REPETIDOR</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label>Pago</label>
+                    <input type="text" id="edit_pagado" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarCambios()">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let modalObj;
+function editar(id) {
+    // 1. Buscar los datos de la fila
+    fetch('/api/obtener_ordenes')
+        .then(res => res.json())
+        .then(data => {
+            const orden = data.find(o => o.id == id);
+            if(orden) {
+                document.getElementById('edit_id').value = orden.id;
+                document.getElementById('edit_folio').value = orden.folio;
+                document.getElementById('edit_cliente').value = orden.cliente;
+                document.getElementById('edit_estatus').value = orden.estatus;
+                document.getElementById('edit_pagado').value = orden.pagado;
+                
+                modalObj = new bootstrap.Modal(document.getElementById('modalEditar'));
+                modalObj.show();
+            }
+        });
+}
+
+function guardarCambios() {
+    const data = {
+        id: document.getElementById('edit_id').value,
+        folio: document.getElementById('edit_folio').value,
+        cliente: document.getElementById('edit_cliente').value,
+        estatus: document.getElementById('edit_estatus').value,
+        pagado: document.getElementById('edit_pagado').value,
+        metodo_pago: "", // Puedes agregar más campos si gustas
+        fecha: new Date().toISOString().split('T')[0]
+    };
+
+    fetch('/api/guardar_orden', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    }).then(() => {
+        modalObj.hide();
+        cargarOrdenes();
+    });
+}
+</script>
+</body>
+</html>

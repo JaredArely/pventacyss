@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nota de Venta Final - CYSS</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            width: 21.59cm;
+            height: 13.97cm; 
+            position: relative;
+            color: #000;
+            overflow: hidden;
+        }
+
+        /* FOLIO INTERNO: Idéntico visualmente, no se imprime */
+        .folio-container {
+            position: absolute;
+            top: 0.8cm;
+            right: 1.8cm;
+            width: 3.5cm;
+            text-align: center;
+        }
+
+        .folio-numero {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            color: #d32f2f; /* Rojo de formato */
+            font-weight: bold;
+            cursor: text;
+        }
+
+        /* 1. CLIENTE: Posición final perfecta (2.9cm) */
+        .header-section {
+            position: absolute;
+            top: 2.9cm; 
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* 2. FECHA: Posición final perfecta (3.4cm) */
+        .fecha-excel {
+            position: absolute;
+            right: 1.5cm;
+            top: 3.4cm; 
+            display: flex;
+            gap: 28px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* 3. PRODUCTOS: Posición final perfecta (5.8cm) */
+        .products-section {
+            position: absolute;
+            top: 5.8cm; 
+            left: 1.2cm;
+            right: 1.5cm;
+        }
+
+        .table-items {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-items td {
+            padding: 2px 2px;
+            vertical-align: top;
+            font-weight: bold;
+        }
+
+        .col-cant { width: 45px; text-align: center; }
+        .col-uni  { width: 45px; text-align: center; }
+        .col-desc { text-align: left; padding-left: 25px !important; }
+        .col-pu   { width: 90px; text-align: right; }
+        .col-total { width: 90px; text-align: right; }
+
+        /* PIE DE PÁGINA: Manteniendo 9.5cm, 10.5cm y 12.2cm */
+        .payment-section {
+            position: absolute;
+            top: 9.5cm; 
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .legal-section {
+            position: absolute;
+            top: 10.5cm; 
+            left: 1.5cm;
+            right: 1.5cm;
+            font-size: 7.5px;
+            text-align: center;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .totals-section {
+            position: absolute;
+            top: 12.2cm; 
+            left: 1.5cm;
+            right: 1.8cm;
+            font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+        }
+
+        .total-letras {
+            flex-grow: 1;
+            text-align: center;
+            text-transform: uppercase;
+            padding-left: 80px;
+        }
+
+        .total-numero {
+            width: 90px;
+            text-align: right;
+        }
+
+        .btn-print {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: #2c3e50;
+            color: #fff;
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        @media print {
+            .no-print, .folio-container, .btn-print { 
+                display: none !important; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn-print no-print" onclick="finalizarYImprimir()">🖨️ IMPRIMIR NOTA</button>
+
+    <div class="folio-container">
+        <span id="num-nota" class="folio-numero" contenteditable="true">1230</span>
+    </div>
+
+    <div class="fecha-excel">
+        <span id="dia"></span>
+        <span id="mes"></span>
+        <span id="anio"></span>
+    </div>
+
+    <div class="header-section">
+        <div id="cliente-nombre" style="text-transform: uppercase; font-size: 12.5px;">CLIENTE</div>
+        <div style="margin-top: 2px; font-size: 12px;">XALAPA, VERACRUZ</div>
+    </div>
+
+    <div class="products-section">
+        <table class="table-items">
+            <tbody id="items-body"></tbody>
+        </table>
+    </div>
+
+    <div class="payment-section">
+        <span contenteditable="true">EFECTIVO</span>
+    </div>
+
+    <div class="legal-section">
+        NUESTROS PRODUCTOS CUENTAN CON 12 MESES DE GARANTÍA CONTRA DEFECTOS DE FABRICACIÓN EN NUESTRAS OFICINAS EXCEPTO
+        AQUELLOS EN QUE EL FABRICANTE ESPECIFIQUE UN PERIODO DISTINTO PARA PRODUCTOS BENQ, HP, LG, XEROX, SAMSUNG, EPSON,
+        ACER LA GARANTÍA ES EN CENTRO DE SERVICIO AUTORIZADO. TINTAS Y TONERS NO HAY GARANTIA. NO HAY CAMBIOS NI DEVOLUCIONES
+    </div>
+
+    <div class="totals-section">
+        <div class="total-letras" id="total-letras"></div>
+        <div class="total-numero" id="total-num"></div>
+    </div>
+
+    <script>
+        let folioActual = localStorage.getItem('folio_cyss') || 1230;
+        document.getElementById('num-nota').innerText = folioActual;
+
+        function finalizarYImprimir() {
+            let folioEditado = document.getElementById('num-nota').innerText;
+            localStorage.setItem('folio_cyss', parseInt(folioEditado) + 1);
+            window.print();
+            document.getElementById('num-nota').innerText = parseInt(folioEditado) + 1;
+        }
+
+        const datos = JSON.parse(localStorage.getItem('datos_transferidos'));
+        if(datos && datos.cliente) document.getElementById('cliente-nombre').innerText = datos.cliente;
+
+        const hoy = new Date();
+        document.getElementById('dia').innerText = String(hoy.getDate()).padStart(2, '0');
+        document.getElementById('mes').innerText = String(hoy.getMonth() + 1).padStart(2, '0');
+        document.getElementById('anio').innerText = String(hoy.getFullYear()).slice(-2);
+
+        let html = '';
+        let granTotal = 0;
+
+        (datos.productos || []).forEach(item => {
+            let totalLinea = item.p * item.c;
+            granTotal += totalLinea;
+            let nombreLimpio = item.n.replace(/\(Stock:.*?\)/g, "").replace(/\[.*?\]/g, "").trim();
+            
+            html += `<tr>
+                <td class="col-cant">${item.c}</td>
+                <td class="col-uni">Pza</td>
+                <td class="col-desc">${item.m} ${nombreLimpio}</td>
+                <td class="col-pu">${item.p.toFixed(2).replace('.', ',')}</td>
+                <td class="col-total">${totalLinea.toFixed(2).replace('.', ',')}</td>
+            </tr>`;
+        });
+
+        document.getElementById('items-body').innerHTML = html;
+        document.getElementById('total-num').innerText = granTotal.toFixed(2).replace('.', ',');
+
+        function numeroALetras(num) {
+            const unidades = ['','UN','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE'];
+            const decenas = ['','DIEZ','VEINTE','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+            const diez_veinte = ['DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISEIS','DIECISIETE','DIECIOCHO','DIECINUEVE'];
+            const centenas = ['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+            let entero = Math.floor(num);
+            let centavos = Math.round((num - entero) * 100);
+            let texto = '';
+            if (entero === 0) texto = 'CERO';
+            else if (entero < 1000) texto = convertirTresCifras(entero);
+            else {
+                let mil = Math.floor(entero / 1000);
+                let resto = entero % 1000;
+                texto = (mil === 1 ? 'MIL' : convertirTresCifras(mil) + ' MIL') + (resto > 0 ? ' ' + convertirTresCifras(resto) : '');
+            }
+            return `${texto} PESOS ${String(centavos).padStart(2,'0')}/100 MN`;
+            function convertirTresCifras(n) {
+                if (n === 100) return 'CIEN';
+                if (n < 10) return unidades[n];
+                if (n < 20) return diez_veinte[n - 10];
+                if (n < 100) {
+                    let d = Math.floor(n / 10);
+                    let u = n % 10;
+                    return decenas[d] + (u > 0 ? ' Y ' + unidades[u] : '');
+                }
+                let c = Math.floor(n / 100);
+                let r = n % 100;
+                return centenas[c] + (r > 0 ? ' ' + convertirTresCifras(r) : '');
+            }
+        }
+        document.getElementById('total-letras').innerText = numeroALetras(granTotal);
+    </script>
+</body>
+</html>

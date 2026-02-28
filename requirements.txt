@@ -1,0 +1,4 @@
+Flask==3.0.0
+psycopg2-binary==2.9.9
+fpdf==1.7.2
+requests==2.31.0
